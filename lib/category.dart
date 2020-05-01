@@ -41,34 +41,41 @@ class Category extends StatelessWidget {
         super(key: key);
 
   /// Navigates to the [ConverterRoute].
+  /// onTapで作動するNavigatorの内容
+  /// bodyはConverterRoute
   void _navigateToConverter(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute<Null>(
-        builder: (BuildContext context) {
-          return Scaffold(
-            appBar: AppBar(
-              elevation: 1.0,
-              title: Text(
-                name,
-                style: Theme.of(context).textTheme.display1,
-              ),
-              centerTitle: true,
-              backgroundColor: color,
+    Navigator.of(context).push(MaterialPageRoute<Null>(
+      builder: (BuildContext context) {
+        return Scaffold(
+          appBar: AppBar(
+            elevation: 1.0,
+            title: Text(
+              name,
+              style: Theme.of(context).textTheme.display1,
             ),
-            body: ConverterRoute(
-              color: color,
-              units: units,
-            ),
-          );
-        },
-      ));
+            centerTitle: true,
+            backgroundColor: color,
+          ),
+          body: ConverterRoute(
+            color: color,
+            units: units,
+          ),
+          // This prevents the attempt to resize the screen when the keyboard
+          // is opened
+          resizeToAvoidBottomPadding: false,
+        );
+      },
+    ));
   }
+
 
 
 
   /// Builds a custom widget that shows [Category] information.
   ///
   /// This information includes the icon, name, and color for the [Category].
+  /// 1ページ目のUI
+  /// **onTapでNavigatorが発動する
   @override
   // This `context` parameter describes the location of this widget in the
   // widget tree. It can be used for obtaining Theme data from the nearest
@@ -85,7 +92,7 @@ class Category extends StatelessWidget {
           splashColor: color,
           // We can use either the () => function() or the () { function(); }
           // syntax.
-          // TODO: Update this onTap property to call _navigateToConverter()
+          // call _navigateToConverter()
           onTap: () {
             _navigateToConverter(context);
           },
