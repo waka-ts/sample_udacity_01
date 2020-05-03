@@ -1,12 +1,10 @@
-// Copyright 2018 The Chromium Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
-
 import 'package:flutter/material.dart';
-import 'category.dart';
-import 'unit.dart';
 
-final _backgroundColor = Color.fromARGB(255, 66, 165, 245);
+import 'backdrop.dart';
+import 'category.dart';
+import 'category_tile.dart';
+import 'unit.dart';
+import 'unit_converter.dart';
 
 /// Category Route (screen).
 ///
@@ -15,19 +13,20 @@ final _backgroundColor = Color.fromARGB(255, 66, 165, 245);
 ///
 /// While it is named CategoryRoute, a more apt name would be CategoryScreen,
 /// because it is responsible for the UI at the route's destination.
-//Categoryを表示するページ
-// Stateの作成
+///
+/// main関数のHome　
 class CategoryRoute extends StatefulWidget {
   const CategoryRoute();
 
   @override
-  CategoryRouteState createState() => CategoryRouteState();
+  _CategoryRouteState createState() => _CategoryRouteState();
 }
 
-//Stateここから
-class CategoryRouteState extends State<CategoryRoute> {
+class _CategoryRouteState extends State<CategoryRoute> {
+  Category _defaultCategory;
+  Category _currentCategory;
   final _categories = <Category>[];
-  final _categoryNames = <String>[
+  static const _categoryNames = <String>[
     'Length',
     'Area',
     'Volume',
@@ -37,7 +36,6 @@ class CategoryRouteState extends State<CategoryRoute> {
     'Energy',
     'Currency',
   ];
-
   static const _baseColors = <ColorSwatch>[
     ColorSwatch(0xFF6AB7A8, {
       'highlight': Color(0xFF6AB7A8),
@@ -74,8 +72,48 @@ class CategoryRouteState extends State<CategoryRoute> {
     }),
   ];
 
+  ///初期化。カテゴリーに名前と色とアイコンとUnitを格納する
+  @override
+  void initState() {
+    super.initState();
+    for (var i = 0; i < _categoryNames.length; i++) {
+      var category = Category(
+        name: _categoryNames[i],
+        color: _baseColors[i],
+        iconLocation: Icons.cake,
+        units: _retrieveUnitList(_categoryNames[i]),
+      );
+      if (i == 0) {
+        _defaultCategory = category;
+      }
+      _categories.add(category);
+    }
+  }
+
+  /// Function to call when a [Category] is tapped.
+  ///　リストからカテゴリーを決定(tap)したら_currentCategoryに代入する
+  void _onCategoryTap(Category category) {
+    setState(() {
+      _currentCategory = category;
+    });
+  }
+
+  /// Makes the correct number of rows for the list view.
+  /// For portrait, we use a [ListView].
+  /// カテゴリーをリスト表示する_tapで_onCategoryTapを行う
+  Widget _buildCategoryWidgets() {
+    return ListView.builder(
+      itemBuilder: (BuildContext context, int index) {
+        return CategoryTile(
+          category: _categories[index],
+          onTap: _onCategoryTap,
+        );
+      },
+      itemCount: _categories.length,
+    );
+  }
+
   /// Returns a list of mock [Unit]s.
-  //2ページ目に表示する単位リスト
   List<Unit> _retrieveUnitList(String categoryName) {
     return List.generate(10, (int i) {
       i += 1;
@@ -86,61 +124,29 @@ class CategoryRouteState extends State<CategoryRoute> {
     });
   }
 
-  //Initialの状態
-  //initStateは最初に1回だけ呼ばれる
-  @override
-  void initState() {
-    //親を
-    super.initState();
-    //categoryNameの数だけ処理を実行
-    for (var i = 0; i < _categoryNames.length; i++) {
-      //_categoriesに情報を取り込む
-      _categories.add(Category(
-        name: _categoryNames[i],
-        color: _baseColors[i],
-        iconLocation: Icons.cake,
-        //2ページ目に表示する情報のリスト
-        units: _retrieveUnitList(_categoryNames[i]),
-      ));
-    }
-  }
-
-  /// Makes the correct number of rows for the list view.
-  ///
-  /// For portrait, we use a [ListView]
-  //
-  Widget _buildCategoryWidgets() {
-    return ListView.builder(
-      itemBuilder: (BuildContext context, int index) => _categories[index],
-      itemCount: _categories.length,
-    );
-  }
-
+  /// UIの中身 カテゴリーリストとBackDropで構成
   @override
   Widget build(BuildContext context) {
-    //
-    final listView = Container(
-      color: _backgroundColor,
-      padding: EdgeInsets.symmetric(horizontal: 8.0),
+    //全体余白とchildで_buildCategoryWidgetsを実行
+    final listView = Padding(
+      padding: EdgeInsets.only(
+        left: 8.0,
+        right: 8.0,
+        bottom: 48.0,
+      ),
       child: _buildCategoryWidgets(),
     );
 
-    final appBar = AppBar(
-      elevation: 0.0,
-      title: Text(
-        'Unit Converter',
-        style: TextStyle(
-          color: Colors.black,
-          fontSize: 30.0,
-        ),
-      ),
-      centerTitle: true,
-      backgroundColor: _backgroundColor,
-    );
-
-    return Scaffold(
-      appBar: appBar,
-      body: listView,
+    //backdropの表示（backはリスト、フロントはユニットコンバーターを表示）
+    return Backdrop(
+      currentCategory:
+      _currentCategory == null ? _defaultCategory : _currentCategory,
+      frontPanel: _currentCategory == null
+          ? UnitConverter(category: _defaultCategory)
+          : UnitConverter(category: _currentCategory),
+      backPanel: listView,
+      frontTitle: Text('Unit Converter'),
+      backTitle: Text('Select a Category'),
     );
   }
 }

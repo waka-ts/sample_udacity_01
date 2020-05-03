@@ -1,40 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:meta/meta.dart';
 
+import 'category.dart';
 import 'unit.dart';
 
 const _padding = EdgeInsets.all(16.0);
 
-
-/// [ConverterRoute] where users can input amounts to convert in one [Unit]
+/// [UnitConverter] where users can input amounts to convert in one [Unit]
 /// and retrieve the conversion in another [Unit] for a specific [Category].
 ///
-/// While it is named ConverterRoute, a more apt name would be ConverterScreen,
-/// because it is responsible for the UI at the route's destination.
-/// ConverterRouteはUserが打ち込む内容を反映するUI
-class ConverterRoute extends StatefulWidget {
-  /// Color for this [Category].
-  final Color color;
+/// UnitConverterはUserが打ち込む内容を反映するUI
+class UnitConverter extends StatefulWidget {
+  /// The current [Category] for unit conversion.
+  final Category category;
 
-  /// Units for this [Category].
-  final List<Unit> units;
-
-  /// This [ConverterRoute] requires the color and units to not be null.
-  const ConverterRoute({
-    @required this.color,
-    @required this.units,
-  })
-      : assert(color != null),
-        assert(units != null);
+  /// This [UnitConverter] takes in a [Category] with [Units]. It can't be null.
+  const UnitConverter({
+    @required this.category,
+  }) : assert(category != null);
 
   @override
-  _ConverterRouteState createState() => _ConverterRouteState();
-
+  _UnitConverterState createState() => _UnitConverterState();
 }
 
-///convertページのState
-class _ConverterRouteState extends State<ConverterRoute> {
-  // value and units
+///State
+class _UnitConverterState extends State<UnitConverter> {
   Unit _fromValue;
   Unit _toValue;
   double _inputValue;
@@ -52,13 +42,25 @@ class _ConverterRouteState extends State<ConverterRoute> {
     _setDefaults();
   }
 
+  ///UnitConverterウィジェットが更新されたら、更新を反映させる
+  ///super.didUpdateWidgetで、ウィジェットが更新されたら呼ばれる
+  @override
+  void didUpdateWidget(UnitConverter old) {
+    super.didUpdateWidget(old);
+    // We update our [DropdownMenuItem] units when we switch [Categories].
+    if (old.category != widget.category) {
+      _createDropdownMenuItems();
+      _setDefaults();
+    }
+  }
 
+  /// Creates fresh list of [DropdownMenuItem] widgets, given a list of [Unit]s.
   /// ドロップダウンの中身を決める(Stateの中につくる)
   void _createDropdownMenuItems() {
     // DropdownMenuItemはドロップダウンの中身を設定する関数
     var newItems = <DropdownMenuItem>[];
-    // unit郡すべてに適応
-    for (var unit in widget.units) {
+    // unit郡全てに適応
+    for (var unit in widget.category.units) {
       // DropdownMenuItemを郡に格納する
       newItems.add(DropdownMenuItem(
         value: unit.name,
@@ -72,48 +74,47 @@ class _ConverterRouteState extends State<ConverterRoute> {
         ),
       ));
     }
-    //
     setState(() {
+      // 格納したリストを_unitMenuItemsに代入する
       _unitMenuItems = newItems;
     });
   }
 
-  ///fromValueとtoValueをユニット郡に格納
+  /// Sets the default values for the 'from' and 'to' [Dropdown]s, and the
+  /// updated output value if a user had previously entered an input.
+  /// fromValueとtoValueをユニット郡に格納
   void _setDefaults() {
     setState(() {
-      _fromValue = widget.units[0];
-      _toValue = widget.units[1];
+      _fromValue = widget.category.units[0];
+      _toValue = widget.category.units[1];
     });
   }
-
 
   /// Clean up conversion
   /// 変換した値を整える。returnはoutputNum
   String _format(double conversion) {
     // 数値はconversionの有効数字7けた
     var outputNum = conversion.toStringAsPrecision(7);
-    // '.'を含み、かつ0で終わる場合は、、、
+    // .と0があったら、、
     if (outputNum.contains('.') && outputNum.endsWith('0')) {
-      // 'outputNumの小数点以下の桁数'がi
+      //小数点以下の桁数iを、0以外がでてくるまで1ずつ減らしていく
       var i = outputNum.length - 1;
-      // iが0の間はiを一個ずつ減らす
       while (outputNum[i] == '0') {
         i -= 1;
       }
-      //0以外が出てきたら、それ以下を桁落とす
+      //0以外がでてきたらそれ以下をカットする
       outputNum = outputNum.substring(0, i + 1);
     }
-    // '.'で終わる場合は
+    //.でおわったら、小数点以下をカットする
     if (outputNum.endsWith('.')) {
-      // 小数点以下をカットする
       return outputNum.substring(0, outputNum.length - 1);
     }
     return outputNum;
   }
 
+
   /// 変換を行う関数
   void _updateConversion() {
-    //setStateで更新
     setState(() {
       _convertedValue =
           _format(_inputValue * (_toValue.conversion / _fromValue.conversion));
@@ -131,6 +132,8 @@ class _ConverterRouteState extends State<ConverterRoute> {
       } else {
         //try-catch文
         //try内処理実行→例外はcatch内部処理実行
+        // Even though we are using the numerical keyboard, we still have to check
+        // for non-numerical input such as '5..0' or '6 -3'
         try {
           //inputをdoubleに変換する
           final inputDouble = double.parse(input);
@@ -150,7 +153,7 @@ class _ConverterRouteState extends State<ConverterRoute> {
 
   ///unitNameが一致するunitをunits配列内から探してくる
   Unit _getUnit(String unitName) {
-    return widget.units.firstWhere(
+    return widget.category.units.firstWhere(
           (Unit unit) {
         return unit.name == unitName;
       },
@@ -161,7 +164,6 @@ class _ConverterRouteState extends State<ConverterRoute> {
   ///unitNameから、getUnitして、_fromValueを設定して、変換(_updateConversion)まで誘導する
   //unitNameは型が決まってないので、(nullの可能性あり？)dynamic型で表記する
   void _updateFromConversion(dynamic unitName) {
-    //状態更新
     setState(() {
       //_getUnitで名前と一致したunitを_fromValueに代入する
       _fromValue = _getUnit(unitName);
@@ -210,10 +212,7 @@ class _ConverterRouteState extends State<ConverterRoute> {
               items: _unitMenuItems,
               //ユーザが選んだ中身(選んだ時に呼ばれる)
               onChanged: onChanged,
-              style: Theme
-                  .of(context)
-                  .textTheme
-                  .title,
+              style: Theme.of(context).textTheme.title,
             ),
           ),
         ),
@@ -225,7 +224,7 @@ class _ConverterRouteState extends State<ConverterRoute> {
   ///returnは最後のpadding
   @override
   Widget build(BuildContext context) {
-    //inputエリア
+    // inputエリア
     final input = Padding(
       padding: _padding,
       child: Column(
@@ -236,15 +235,9 @@ class _ConverterRouteState extends State<ConverterRoute> {
           // You can read more about it here: https://flutter.io/text-input
           //テキスト入力したら_updateInputFieldを行う
           TextField(
-            style: Theme
-                .of(context)
-                .textTheme
-                .display1,
+            style: Theme.of(context).textTheme.display1,
             decoration: InputDecoration(
-              labelStyle: Theme
-                  .of(context)
-                  .textTheme
-                  .display1,
+              labelStyle: Theme.of(context).textTheme.display1,
               errorText: _showValidationError ? 'Invalid number entered' : null,
               labelText: 'Input',
               border: OutlineInputBorder(
@@ -263,7 +256,7 @@ class _ConverterRouteState extends State<ConverterRoute> {
       ),
     );
 
-    //矢印アイコン
+    // 矢印アイコン
     final arrows = RotatedBox(
       quarterTurns: 1,
       child: Icon(
@@ -272,7 +265,7 @@ class _ConverterRouteState extends State<ConverterRoute> {
       ),
     );
 
-    //outputエリア
+    // outputエリア
     final output = Padding(
       padding: _padding,
       child: Column(
@@ -296,7 +289,7 @@ class _ConverterRouteState extends State<ConverterRoute> {
       ),
     );
 
-    //input、矢印、outputを縦に並べる
+    // input,矢印,outputを縦に配置
     final converter = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -306,7 +299,7 @@ class _ConverterRouteState extends State<ConverterRoute> {
       ],
     );
 
-    //全体余白をつくって、converterを表示
+    // 全体余白を作って中にconverter表示
     return Padding(
       padding: _padding,
       child: converter,
