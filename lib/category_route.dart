@@ -114,6 +114,7 @@ class _CategoryRouteState extends State<CategoryRoute> {
   }
 
   /// Returns a list of mock [Unit]s.
+  /// Category Unit 数字のリスト
   List<Unit> _retrieveUnitList(String categoryName) {
     return List.generate(10, (int i) {
       i += 1;

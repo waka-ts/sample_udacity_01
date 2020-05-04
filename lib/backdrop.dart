@@ -211,7 +211,7 @@ class _BackdropState extends State<Backdrop>
         status == AnimationStatus.forward;
   }
 
-  /// 重ね部を戻す動き
+  /// 重ね部を出したり閉じたりする動き
   void _toggleBackdropPanelVisibility() {
     //FocusScope.of(context)でcontextのFocusScopeNodeを取得
     // focusの優先権をFocusNode()(たぶん全く新しいNodeを設定している)に与えるように要求する
@@ -318,7 +318,7 @@ class _BackdropState extends State<Backdrop>
         backgroundColor: widget.currentCategory.color,
         elevation: 0.0,
         leading: IconButton(
-          //タップで閉じる
+          //タップでbackdrop開く
           onPressed: _toggleBackdropPanelVisibility,
           icon: AnimatedIcon(
             icon: AnimatedIcons.close_menu,

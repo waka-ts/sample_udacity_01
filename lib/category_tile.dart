@@ -44,6 +44,7 @@ class CategoryTile extends StatelessWidget {
       color: Colors.transparent,
       child: Container(
         height: _rowHeight,
+        //リップルエフェクト
         child: InkWell(
           borderRadius: _borderRadius,
           highlightColor: category.color['highlight'],
